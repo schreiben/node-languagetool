@@ -52,7 +52,9 @@
   const install = exports.install = callback => {
     callback = callback || () => {};
     var ltdir = ltDir(), ltfile = ltFile();
+
     rmdir(ltdir);
+
     request
       .get(url())
       .on('response', res => {
@@ -88,27 +90,39 @@
 
           if (err) throw err;
           zipfile.readEntry();
-          zipfile.on("entry", entry => {
+          zipfile.on('entry', entry => {
             bar.tick(1);
             var realfn = toreal(entry.fileName);
             if (/\/$/.test(entry.fileName)) {
               // directory file names end with '/'
               mkdirp(realfn, err => {
-                if (err) throw err;
-                zipfile.readEntry();
+                if (err)
+                  callback(err);
+                else
+                  zipfile.readEntry();
               });
             } else {
               // file entry
               zipfile.openReadStream(entry, (err, readStream) => {
-                if (err) throw err;
-                // ensure parent directory exists
-                mkdirp(path.dirname(realfn), err => {
-                  if (err) throw err;
-                  readStream.pipe(fs.createWriteStream(realfn));
-                  readStream.on("end", () => zipfile.readEntry());
-                });
+                if (err)
+                  callback(err);
+                else {
+                  // ensure parent directory exists
+                  mkdirp(path.dirname(realfn), err => {
+                    if (err)
+                      callback(err);
+                    else {
+                      readStream.pipe(fs.createWriteStream(realfn));
+                      readStream.on('end', () => zipfile.readEntry());
+                    }
+                  });
+                }
               });
             }
+          });
+          zipfile.on('close', () => {
+            fs.unlink(ltfile);
+            callback();
           });
 
         });
