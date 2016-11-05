@@ -35,22 +35,39 @@
   const request = require('request');
   const ProgressBar = require('progress');
   const child_process = require('child_process');
+  const portfinder = require('portfinder');
+  const osLocale = require('os-locale');
+  const jre = require('node-jre');
+
+  const ltFile = exports.ltFile = () => path.join(path.resolve('.'), 'lt.zip');
+  const ltDir = exports.ltDir = () => path.join(path.resolve('.'), 'lt');
+  const url = exports.url = () =>
+    'https://languagetool.org/download/LanguageTool-stable.zip';
+  const host = 'localhost';
 
   const fail = reason => {
     console.error(reason);
     process.exit(1);
   };
 
-  const ltFile = exports.ltFile = () => path.join(path.resolve('.'), 'lt.zip');
-  const ltDir = exports.ltDir = () => path.join(path.resolve('.'), 'lt');
+  const smoketest = exports.smoketest = () => new Promise((resolve, reject) =>
+    check('This is wong.', 'en-US').then(
+      res => {
+        try {
+          var match = res.matches[0];
+          if (match.offset === 8 && match.length === 4)
+            resolve();
+          else
+            reject();
+        } catch (ex) {
+          reject();
+        }
+      },
+      err => reject()
+    )
+  );
 
-  const smoketest = exports.smoketest = () => true;
-
-  const url = exports.url = () =>
-    'https://languagetool.org/download/LanguageTool-stable.zip';
-
-  const install = exports.install = callback => {
-    callback = callback || () => {};
+  const install = exports.install = () => new Promise((resolve, reject) => {
     var ltdir = ltDir(), ltfile = ltFile();
 
     rmdir(ltdir);
@@ -67,10 +84,7 @@
         });
         res.on('data', chunk => bar.tick(chunk.length));
       })
-      .on('error', err => {
-        console.log(`problem with request: ${err.message}`);
-        callback(err);
-      })
+      .on('error', err => reject(err))
       .pipe(fs.createWriteStream(ltfile))
       .on('close', () => {
         const toreal = fn => {
@@ -97,7 +111,7 @@
               // directory file names end with '/'
               mkdirp(realfn, err => {
                 if (err)
-                  callback(err);
+                  reject(err);
                 else
                   zipfile.readEntry();
               });
@@ -105,12 +119,12 @@
               // file entry
               zipfile.openReadStream(entry, (err, readStream) => {
                 if (err)
-                  callback(err);
+                  reject(err);
                 else {
                   // ensure parent directory exists
                   mkdirp(path.dirname(realfn), err => {
                     if (err)
-                      callback(err);
+                      reject(err);
                     else {
                       readStream.pipe(fs.createWriteStream(realfn));
                       readStream.on('end', () => zipfile.readEntry());
@@ -122,11 +136,81 @@
           });
           zipfile.on('close', () => {
             fs.unlink(ltfile);
-            callback();
+            resolve();
           });
 
         });
       });
+  });
+
+
+  var server, server_port, sysloc;
+
+  const kill = exports.kill = () => {
+    if (server)
+      server.kill();
+    server = null;
   };
+
+  const start = exports.start = () => new Promise((resolve, reject) => {
+    if (server)
+      resolve();
+    else
+      portfinder.getPort((err, port) => {
+        if (err)
+          reject(err);
+        else {
+          server_port = port;
+          server = jre.spawn(
+            [
+              ltDir(),
+              path.join(ltDir(), 'languagetool.jar'),
+              path.join(ltDir(), 'languagetool-server.jar'),
+            ],
+            'org.languagetool.server.HTTPServer',
+            ['-p', server_port]
+          );
+          server.stdout.on('data', data => {
+            if (/Server started/.test(data.toString()))
+              osLocale((err, locale) => {
+                sysloc = err ? 'en-US' : locale;
+                resolve();
+              });
+          });
+          server.on('error', err => {
+            kill();
+            reject(err);
+          });
+        }
+      });
+  });
+
+  const stop = exports.stop = () => new Promise((resolve, reject) => {
+    kill();
+    resolve();
+  });
+
+  const restart = exports.start = () => stop().then(
+    (resolve, reject) => start().then(resolve, reject)
+  );
+
+  const check = exports.check = (text, locale) =>
+    new Promise(
+      (resolve, reject) => start().then(
+        () => request.post(
+          {
+            url: 'http://' + host + ':' + server_port + '/v2/check',
+            method: 'POST',
+            headers: { 'Accept': 'application/json' },
+            form: {
+              text: text,
+              language: locale || sysloc
+            }
+          },
+          (err, res, body) => err ? reject(err) : resolve(JSON.parse(body))
+        ),
+        err => reject(err)
+      )
+    );
 
 })();
