@@ -24,5 +24,5 @@
 const process = require('process');
 require('.').smoketest().then(
   () => process.exit(0),
-  () => process.exit(1)
+  err => { console.error(err); process.exit(1); }
 );

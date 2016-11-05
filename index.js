@@ -194,13 +194,18 @@
     (resolve, reject) => start().then(resolve, reject)
   );
 
+  const baseUrl = exports.baseUrl = () =>
+    'http://' + host + ':' + server_port + '/v2/';
+
+  const stdHeader = exports.stdHeader = () =>
+    ({ 'Accept': 'application/json' });
+
   const check = exports.check = (text, locale) =>
     new Promise(
       (resolve, reject) => start().then(
-        () => request.post(
-          {
-            url: 'http://' + host + ':' + server_port + '/v2/check',
-            headers: { 'Accept': 'application/json' },
+        () => request.post({
+            url: baseUrl() + 'check',
+            headers: stdHeader(),
             form: {
               text: text,
               language: locale || sysloc
@@ -215,10 +220,9 @@
   const languages = exports.languages = () =>
     new Promise(
       (resolve, reject) => start().then(
-        () => request.get(
-          {
-            url: 'http://' + host + ':' + server_port + '/v2/languages',
-            headers: { 'Accept': 'application/json' }
+        () => request.get({
+            url: baseUrl() + 'languages',
+            headers: stdHeader()
           },
           (err, res, body) => err ? reject(err) : resolve(JSON.parse(body))
         ),
