@@ -39,8 +39,8 @@
   const osLocale = require('os-locale');
   const jre = require('node-jre');
 
-  const ltFile = exports.ltFile = () => path.join(path.resolve('.'), 'lt.zip');
-  const ltDir = exports.ltDir = () => path.join(path.resolve('.'), 'lt');
+  const ltFile = exports.ltFile = () => path.join(__dirname, 'lt.zip');
+  const ltDir = exports.ltDir = () => path.join(__dirname, 'lt');
   const url = exports.url = () =>
     'https://languagetool.org/download/LanguageTool-stable.zip';
   const host = 'localhost';
@@ -200,12 +200,25 @@
         () => request.post(
           {
             url: 'http://' + host + ':' + server_port + '/v2/check',
-            method: 'POST',
             headers: { 'Accept': 'application/json' },
             form: {
               text: text,
               language: locale || sysloc
             }
+          },
+          (err, res, body) => err ? reject(err) : resolve(JSON.parse(body))
+        ),
+        err => reject(err)
+      )
+    );
+
+  const languages = exports.languages = () =>
+    new Promise(
+      (resolve, reject) => start().then(
+        () => request.get(
+          {
+            url: 'http://' + host + ':' + server_port + '/v2/languages',
+            headers: { 'Accept': 'application/json' }
           },
           (err, res, body) => err ? reject(err) : resolve(JSON.parse(body))
         ),
