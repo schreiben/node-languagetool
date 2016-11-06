@@ -153,6 +153,7 @@
   };
 
   const start = exports.start = () => new Promise((resolve, reject) => {
+    const ltdir = ltDir();
     if (server)
       resolve();
     else
@@ -163,9 +164,9 @@
           server_port = port;
           server = jre.spawn(
             [
-              ltDir(),
-              path.join(ltDir(), 'languagetool.jar'),
-              path.join(ltDir(), 'languagetool-server.jar'),
+              ltdir,
+              path.join(ltdir, 'languagetool.jar'),
+              path.join(ltdir, 'languagetool-server.jar'),
             ],
             'org.languagetool.server.HTTPServer',
             ['-p', server_port]
@@ -203,7 +204,8 @@
   const check = exports.check = (text, locale) =>
     new Promise(
       (resolve, reject) => start().then(
-        () => request.post({
+        () => request.post(
+          {
             url: baseUrl() + 'check',
             headers: stdHeader(),
             form: {
@@ -220,7 +222,8 @@
   const languages = exports.languages = () =>
     new Promise(
       (resolve, reject) => start().then(
-        () => request.get({
+        () => request.get(
+          {
             url: baseUrl() + 'languages',
             headers: stdHeader()
           },
