@@ -73,7 +73,11 @@
     rmdir(ltdir);
 
     request
-      .get(url())
+      .get({
+        url: url(),
+        agent: false,
+        headers: { connection: 'keep-alive' }
+      })
       .on('response', res => {
         var len = parseInt(res.headers['content-length'], 10);
         var bar = new ProgressBar('  downloading Language Tool [:bar] :percent :etas', {

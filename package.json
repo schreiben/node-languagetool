@@ -1,6 +1,6 @@
 {
   "name": "node-languagetool",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Node.js binding to the Language Tool spellchecker framework",
   "main": "index.js",
   "dependencies": {
