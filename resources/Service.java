@@ -60,7 +60,10 @@ public class Service {
             for (Language l : Languages.get()) {
               g.writeStartObject();
                 g.writeStringField("name", l.getName());
-                g.writeStringField("locale", l.getLocaleWithCountryAndVariant().toString());
+                g.writeStringField(
+                  "locale",
+                  l.getLocaleWithCountryAndVariant().toString()
+                );
               g.writeEndObject();
             }
           g.writeEndArray();
@@ -99,18 +102,27 @@ public class Service {
               for (RuleMatch match :
                 new JLanguageTool(
                   Languages.getLanguageForShortName(text)
-                ).check(line.substring(i2+1))
+                ).check(line.substring(i2 + 1))
               ) {
                 g.writeStartObject();
 
                   g.writeNumberField("offset", match.getFromPos());
 
-                  g.writeNumberField("length", match.getToPos()-match.getFromPos());
+                  g.writeNumberField(
+                    "length",
+                    match.getToPos()-match.getFromPos()
+                  );
 
-                  g.writeStringField("message", substituteSuggestion(match.getMessage()));
+                  g.writeStringField(
+                    "message",
+                    substituteSuggestion(match.getMessage())
+                  );
 
                   if (match.getShortMessage() != null) {
-                    g.writeStringField("shortMessage", substituteSuggestion(match.getShortMessage()));
+                    g.writeStringField(
+                      "shortMessage",
+                      substituteSuggestion(match.getShortMessage())
+                    );
                   }
 
                   g.writeArrayFieldStart("replacements");
@@ -132,7 +144,10 @@ public class Service {
 
                   g.writeStringField("ruleDescription", rule.getDescription());
 
-                  g.writeStringField("ruleIssueType", rule.getLocQualityIssueType().toString());
+                  g.writeStringField(
+                    "ruleIssueType",
+                    rule.getLocQualityIssueType().toString()
+                  );
 
                   if (rule.getUrl() != null) {
                     g.writeArrayFieldStart("ruleUrls");
