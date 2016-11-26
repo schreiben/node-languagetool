@@ -25,30 +25,11 @@
 
 (function(){
 
-  const os = require('os');
   const fs = require('fs');
   const path = require('path');
-  const rmdir = require('rmdir');
-  const yauzl = require("yauzl");
-  const mkdirp = require("mkdirp");
-  const process = require('process');
-  const request = require('request');
-  const ProgressBar = require('progress');
-  const child_process = require('child_process');
-  const portfinder = require('portfinder');
   const osLocale = require('os-locale');
   const jre = require('node-jre');
-
-  const ltFile = exports.ltFile = () => path.join(__dirname, 'lt.zip');
-  const ltDir = exports.ltDir = () => path.join(__dirname, 'lt');
-  const url = exports.url = () =>
-    'https://languagetool.org/download/LanguageTool-stable.zip';
-  const host = 'localhost';
-
-  const fail = reason => {
-    console.error(reason);
-    process.exit(1);
-  };
+  const grd = require('node-grd');
 
   const smoketest = exports.smoketest = () => new Promise((resolve, reject) =>
     check('This is wong.', 'en-US').then(
@@ -67,87 +48,15 @@
     )
   );
 
-  const install = exports.install = () => new Promise((resolve, reject) => {
-    var ltdir = ltDir(), ltfile = ltFile();
-
-    rmdir(ltdir);
-
-    request
-      .get({
-        url: url(),
-        agent: false,
-        headers: { connection: 'keep-alive' }
-      })
-      .on('response', res => {
-        var len = parseInt(res.headers['content-length'], 10);
-        var bar = new ProgressBar(
-          '  downloading Language Tool [:bar] :percent :etas', {
-          complete: '=',
-          incomplete: ' ',
-          width: 80,
-          total: len
-        });
-        res.on('data', chunk => bar.tick(chunk.length));
-      })
-      .on('error', err => reject(err))
-      .pipe(fs.createWriteStream(ltfile))
-      .on('close', () => {
-        const toreal = fn => {
-          var parts = fn.split('/');
-          parts[0] = ltdir;
-          return path.join.apply(path, parts);
-        };
-        yauzl.open(ltfile, { lazyEntries: true }, (err, zipfile) => {
-
-          var len = parseInt(zipfile.entryCount, 10);
-          var bar = new ProgressBar(
-            '  unzipping   Language Tool [:bar] :percent :etas', {
-            complete: '=',
-            incomplete: ' ',
-            width: 80,
-            total: len
-          });
-
-          if (err) throw err;
-          zipfile.readEntry();
-          zipfile.on('entry', entry => {
-            bar.tick(1);
-            var realfn = toreal(entry.fileName);
-            if (/\/$/.test(entry.fileName)) {
-              // directory file names end with '/'
-              mkdirp(realfn, err => {
-                if (err)
-                  reject(err);
-                else
-                  zipfile.readEntry();
-              });
-            } else {
-              // file entry
-              zipfile.openReadStream(entry, (err, readStream) => {
-                if (err)
-                  reject(err);
-                else {
-                  // ensure parent directory exists
-                  mkdirp(path.dirname(realfn), err => {
-                    if (err)
-                      reject(err);
-                    else {
-                      readStream.pipe(fs.createWriteStream(realfn));
-                      readStream.on('end', () => zipfile.readEntry());
-                    }
-                  });
-                }
-              });
-            }
-          });
-          zipfile.on('close', () => {
-            fs.unlink(ltfile);
-            resolve();
-          });
-
-        });
-      });
-  });
+  const install = exports.install = () => new Promise((resolve, reject) =>
+    grd.install(
+      'schreiben',
+      'node-loanguagetool-service',
+      __dirname,
+      'lt',
+      err => err ? reject(err) : resolve()
+    )
+  );
 
 
   var service, queue = [];
@@ -162,7 +71,7 @@
     service.stdin.write(JSON.stringify(queue[queue.length - 1].cmd) + '\n');
 
   const start = exports.start = () => new Promise((resolve, reject) => {
-    const ltdir = ltDir();
+    const ltdir = path.join(__dirname, 'lt');
     if (service)
       resolve();
     else {
