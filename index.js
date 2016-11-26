@@ -80,7 +80,8 @@
       })
       .on('response', res => {
         var len = parseInt(res.headers['content-length'], 10);
-        var bar = new ProgressBar('  downloading Language Tool [:bar] :percent :etas', {
+        var bar = new ProgressBar(
+          '  downloading Language Tool [:bar] :percent :etas', {
           complete: '=',
           incomplete: ' ',
           width: 80,
@@ -99,7 +100,8 @@
         yauzl.open(ltfile, { lazyEntries: true }, (err, zipfile) => {
 
           var len = parseInt(zipfile.entryCount, 10);
-          var bar = new ProgressBar('  unzipping   Language Tool [:bar] :percent :etas', {
+          var bar = new ProgressBar(
+            '  unzipping   Language Tool [:bar] :percent :etas', {
             complete: '=',
             incomplete: ' ',
             width: 80,
