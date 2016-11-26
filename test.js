@@ -23,6 +23,6 @@
 
 const process = require('process');
 require('.').smoketest().then(
-  () => process.exit(0),
+  () => { console.log('Success'); process.exit(0); },
   err => { console.error(err); process.exit(1); }
 );

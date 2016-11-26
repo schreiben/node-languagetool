@@ -150,46 +150,44 @@
   });
 
 
-  var server, server_port, sysloc;
+  var service, queue = [];
 
   const kill = exports.kill = () => {
-    if (server)
-      server.kill();
-    server = null;
+    if (service)
+      service.kill();
+    service = null;
   };
+
+  const writeTopCommand = () =>
+    service.stdin.write(JSON.stringify(queue[queue.length - 1].cmd) + '\n');
 
   const start = exports.start = () => new Promise((resolve, reject) => {
     const ltdir = ltDir();
-    if (server)
+    if (service)
       resolve();
-    else
-      portfinder.getPort((err, port) => {
-        if (err)
-          reject(err);
-        else {
-          server_port = port;
-          server = jre.spawn(
-            [
-              ltdir,
-              path.join(ltdir, 'languagetool.jar'),
-              path.join(ltdir, 'languagetool-server.jar'),
-            ],
-            'org.languagetool.server.HTTPServer',
-            ['-p', server_port]
-          );
-          server.stdout.on('data', data => {
-            if (/Server started/.test(data.toString()))
-              osLocale((err, locale) => {
-                sysloc = err ? 'en-US' : locale;
-                resolve();
-              });
-          });
-          server.on('error', err => {
-            kill();
-            reject(err);
-          });
-        }
+    else {
+      service = jre.spawn(
+        [
+          ltdir,
+          path.join(ltdir, 'languagetool.jar'),
+          'resources'
+        ],
+        'Service',
+        [],
+        { encoding: 'utf-8' }
+      );
+      service.stdout.on('data', line => {
+        line = JSON.parse(line);
+        var entry = queue.pop();
+        if (line.code === 200 && entry.resolve)
+          entry.resolve(line);
+        else if (line.code != 200 && entry.reject)
+          entry.reject(line);
       });
+      if(queue.length > 0)
+        writeTopCommand();
+      resolve();
+    }
   });
 
   const stop = exports.stop = () => new Promise((resolve, reject) => {
@@ -201,42 +199,23 @@
     (resolve, reject) => start().then(resolve, reject)
   );
 
-  const baseUrl = exports.baseUrl = () =>
-    'http://' + host + ':' + server_port + '/v2/';
+  const send = exports.send = cmd => new Promise((resolve, reject) => start().then(() => {
+    var entry = {
+      cmd: cmd,
+      resolve: resolve,
+      reject: reject
+    };
+    queue.unshift(entry);
+    if(queue.length === 1)
+      writeTopCommand();
+  }));
 
-  const stdHeader = exports.stdHeader = () =>
-    ({ 'Accept': 'application/json' });
+  const check = exports.check = (text, locale) => send({
+    command: "check",
+    text: text,
+    language: locale.toString()
+  });
 
-  const check = exports.check = (text, locale) =>
-    new Promise(
-      (resolve, reject) => start().then(
-        () => request.post(
-          {
-            url: baseUrl() + 'check',
-            headers: stdHeader(),
-            form: {
-              text: text,
-              language: locale || sysloc
-            }
-          },
-          (err, res, body) => err ? reject(err) : resolve(JSON.parse(body))
-        ),
-        err => reject(err)
-      )
-    );
-
-  const languages = exports.languages = () =>
-    new Promise(
-      (resolve, reject) => start().then(
-        () => request.get(
-          {
-            url: baseUrl() + 'languages',
-            headers: stdHeader()
-          },
-          (err, res, body) => err ? reject(err) : resolve(JSON.parse(body))
-        ),
-        err => reject(err)
-      )
-    );
+  const languages = exports.languages = () => send({ command: "languages" });
 
 })();
