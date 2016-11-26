@@ -4,5 +4,5 @@ os:
   - linux
   - osx
 install:
-  - ant compile
   - npm install
+  - ant compile
