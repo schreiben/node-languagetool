@@ -174,8 +174,9 @@
         ],
         'Service',
         [],
-        { encoding: 'utf-8' }
+        { encoding: 'utf8' }
       );
+      service.on('error', err => reject(err));
       service.stdout.on('data', line => {
         line = JSON.parse(line);
         var entry = queue.pop();
