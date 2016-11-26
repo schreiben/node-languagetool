@@ -58,9 +58,9 @@
           if (match.offset === 8 && match.length === 4)
             resolve();
           else
-            reject();
+            reject('Check was wrong.');
         } catch (ex) {
-          reject();
+          reject(ex);
         }
       },
       err => reject(err)
