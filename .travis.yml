@@ -3,6 +3,8 @@ node_js: "5.5.0"
 os:
   - linux
   - osx
+before_install:
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install ant; fi
 install:
   - npm install
   - ant compile
