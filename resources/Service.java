@@ -49,6 +49,20 @@ public class Service {
     return s.replace("<suggestion>", "\"").replace("</suggestion>", "\"");
   }
 
+  private static String codeResponse(int code) {
+    StringWriter sw = new StringWriter();
+    try {
+      try (JsonGenerator g = factory.createGenerator(sw)) {
+        g.writeStartObject();
+          g.writeNumberField("code", code);
+        g.writeEndObject();
+      }
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    return sw.toString();
+  }
+
   public static void main(String[] args) {
 
     StringWriter sw = new StringWriter();
@@ -74,17 +88,8 @@ public class Service {
     }
     String languagesResponse = sw.toString();
 
-    sw = new StringWriter();
-    try {
-      try (JsonGenerator g = factory.createGenerator(sw)) {
-        g.writeStartObject();
-          g.writeNumberField("code", 500);
-        g.writeEndObject();
-      }
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    String errorResponse = sw.toString();
+    String errorResponse = codeResponse(500);
+    String okResponse = codeResponse(200);
 
     Scanner sc = new Scanner(System.in);
     while(sc.hasNextLine()) {
@@ -174,6 +179,9 @@ public class Service {
         System.out.println(sw.toString());
       } else if (line.startsWith("L")) {
         System.out.println(languagesResponse);
+      } else if (line.startsWith("Q")) {
+        System.out.println(okResponse);
+        return;
       } else
         System.out.println(errorResponse);
     }
