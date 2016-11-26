@@ -51,7 +51,7 @@
   const install = exports.install = () => new Promise((resolve, reject) =>
     grd.install(
       'schreiben',
-      'node-loanguagetool-service',
+      'node-languagetool-service',
       __dirname,
       'lt',
       err => err ? reject(err) : resolve()
