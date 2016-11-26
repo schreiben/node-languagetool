@@ -23,6 +23,8 @@
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
 import org.languagetool.AnalyzedSentence;
 import org.languagetool.JLanguageTool;
 import org.languagetool.Language;
@@ -52,12 +54,12 @@ public class Service {
   private static String codeResponse(int code) {
     StringWriter sw = new StringWriter();
     try {
-      try (JsonGenerator g = factory.createGenerator(sw)) {
-        g.writeStartObject();
-          g.writeNumberField("code", code);
-        g.writeEndObject();
-      }
-    } catch (IOException e) {
+      JsonGenerator g = factory.createGenerator(sw);
+      g.writeStartObject();
+        g.writeNumberField("code", code);
+      g.writeEndObject();
+      g.flush();
+    } catch (Exception e) {
       throw new RuntimeException(e);
     }
     return sw.toString();
@@ -67,23 +69,23 @@ public class Service {
 
     StringWriter sw = new StringWriter();
     try {
-      try (JsonGenerator g = factory.createGenerator(sw)) {
-        g.writeStartObject();
-          g.writeNumberField("code", 200);
-          g.writeArrayFieldStart("languages");
-            for (Language l : Languages.get()) {
-              g.writeStartObject();
-                g.writeStringField("name", l.getName());
-                g.writeStringField(
-                  "locale",
-                  l.getLocaleWithCountryAndVariant().toString()
-                );
-              g.writeEndObject();
-            }
-          g.writeEndArray();
-        g.writeEndObject();
-      }
-    } catch (IOException e) {
+      JsonGenerator g = factory.createGenerator(sw);
+      g.writeStartObject();
+        g.writeNumberField("code", 200);
+        g.writeArrayFieldStart("languages");
+          for (Language l : Languages.get()) {
+            g.writeStartObject();
+              g.writeStringField("name", l.getName());
+              g.writeStringField(
+                "locale",
+                l.getLocaleWithCountryAndVariant().toString()
+              );
+            g.writeEndObject();
+          }
+        g.writeEndArray();
+      g.writeEndObject();
+      g.flush();
+    } catch (Exception e) {
       throw new RuntimeException(e);
     }
     String languagesResponse = sw.toString();
@@ -93,97 +95,116 @@ public class Service {
 
     Scanner sc = new Scanner(System.in);
     while(sc.hasNextLine()) {
-      String line = sc.nextLine();
-      if(line.startsWith("C:")) {
-        int i1 = 2;
-        int i2 = line.indexOf(":", 2);
-        String text = line.substring(i1, i2);
-        sw = new StringWriter();
-        try {
-          try (JsonGenerator g = factory.createGenerator(sw)) {
-            g.writeStartObject();
-              g.writeNumberField("code", 200);
-              g.writeArrayFieldStart("matches");
-              for (RuleMatch match :
-                new JLanguageTool(
-                  Languages.getLanguageForShortName(text)
-                ).check(line.substring(i2 + 1))
-              ) {
-                g.writeStartObject();
-
-                  g.writeNumberField("offset", match.getFromPos());
-
-                  g.writeNumberField(
-                    "length",
-                    match.getToPos()-match.getFromPos()
-                  );
-
-                  g.writeStringField(
-                    "message",
-                    substituteSuggestion(match.getMessage())
-                  );
-
-                  if (match.getShortMessage() != null) {
-                    g.writeStringField(
-                      "shortMessage",
-                      substituteSuggestion(match.getShortMessage())
-                    );
-                  }
-
-                  g.writeArrayFieldStart("replacements");
-                  for (String replacement : match.getSuggestedReplacements()) {
-                    g.writeString(replacement);
-                  }
-                  g.writeEndArray();
-
-                  Rule rule = match.getRule();
-
-                  g.writeStringField("ruleId", rule.getId());
-
-                  if (rule instanceof AbstractPatternRule) {
-                    String subId = ((AbstractPatternRule) rule).getSubId();
-                    if (subId != null) {
-                      g.writeStringField("ruleSubId", subId);
-                    }
-                  }
-
-                  g.writeStringField("ruleDescription", rule.getDescription());
-
-                  g.writeStringField(
-                    "ruleIssueType",
-                    rule.getLocQualityIssueType().toString()
-                  );
-
-                  if (rule.getUrl() != null) {
-                    g.writeArrayFieldStart("ruleUrls");
-                      g.writeString(rule.getUrl().toString());
-                    g.writeEndArray();
-                  }
-
-                  Category category = rule.getCategory();
-                  CategoryId catId = category.getId();
-                  if (catId != null) {
-                    g.writeStringField("ruleCategoryId", catId.toString());
-
-                    g.writeStringField("ruleCategoryName", category.getName());
-                  }
-
-                g.writeEndObject();
-              }
-              g.writeEndArray();
-            g.writeEndObject();
+      try {
+        String line = sc.nextLine();
+        JsonParser p = factory.createParser(line);
+        String cmd = "";
+        String text = "";
+        String language = "";
+        while (p.nextToken() != JsonToken.END_OBJECT) {
+          String name = p.getCurrentName();
+          if ("command".equals(name)) {
+            p.nextToken();
+            cmd = p.getText();
           }
-        } catch (IOException e) {
-          throw new RuntimeException(e);
+          if ("text".equals(name)) {
+            p.nextToken();
+            text = p.getText();
+          }
+          if ("language".equals(name)) {
+            p.nextToken();
+            language = p.getText();
+          }
         }
-        System.out.println(sw.toString());
-      } else if (line.startsWith("L")) {
-        System.out.println(languagesResponse);
-      } else if (line.startsWith("Q")) {
-        System.out.println(okResponse);
-        return;
-      } else
+        p.close();
+
+        if("check".equals(cmd)) {
+          sw = new StringWriter();
+          JsonGenerator g = factory.createGenerator(sw);
+          g.writeStartObject();
+            g.writeNumberField("code", 200);
+            g.writeArrayFieldStart("matches");
+            for (RuleMatch match :
+              new JLanguageTool(
+                Languages.getLanguageForShortName(language)
+              ).check(text)
+            ) {
+              g.writeStartObject();
+
+                g.writeNumberField("offset", match.getFromPos());
+
+                g.writeNumberField(
+                  "length",
+                  match.getToPos()-match.getFromPos()
+                );
+
+                g.writeStringField(
+                  "message",
+                  substituteSuggestion(match.getMessage())
+                );
+
+                if (match.getShortMessage() != null) {
+                  g.writeStringField(
+                    "shortMessage",
+                    substituteSuggestion(match.getShortMessage())
+                  );
+                }
+
+                g.writeArrayFieldStart("replacements");
+                for (String replacement : match.getSuggestedReplacements()) {
+                  g.writeString(replacement);
+                }
+                g.writeEndArray();
+
+                Rule rule = match.getRule();
+
+                g.writeStringField("ruleId", rule.getId());
+
+                if (rule instanceof AbstractPatternRule) {
+                  String subId = ((AbstractPatternRule) rule).getSubId();
+                  if (subId != null) {
+                    g.writeStringField("ruleSubId", subId);
+                  }
+                }
+
+                g.writeStringField("ruleDescription", rule.getDescription());
+
+                g.writeStringField(
+                  "ruleIssueType",
+                  rule.getLocQualityIssueType().toString()
+                );
+
+                if (rule.getUrl() != null) {
+                  g.writeArrayFieldStart("ruleUrls");
+                    g.writeString(rule.getUrl().toString());
+                  g.writeEndArray();
+                }
+
+                Category category = rule.getCategory();
+                CategoryId catId = category.getId();
+                if (catId != null) {
+                  g.writeStringField("ruleCategoryId", catId.toString());
+
+                  g.writeStringField("ruleCategoryName", category.getName());
+                }
+
+              g.writeEndObject();
+            }
+            g.writeEndArray();
+          g.writeEndObject();
+          g.flush();
+          System.out.println(sw.toString());
+        } else if ("languages".equals(cmd)) {
+          System.out.println(languagesResponse);
+        } else if ("quit".equals(cmd)) {
+          System.out.println(okResponse);
+          return;
+        } else {
+          System.out.println(errorResponse);
+        }
+      } catch (Exception e) {
         System.out.println(errorResponse);
+      }
     }
   }
 }
