@@ -63,7 +63,7 @@
           reject();
         }
       },
-      err => reject()
+      err => reject(err)
     )
   );
 
@@ -167,11 +167,7 @@
       resolve();
     else {
       service = jre.spawn(
-        [
-          ltdir,
-          path.join(ltdir, 'languagetool.jar'),
-          'resources'
-        ],
+        [ ltdir, path.join(ltdir, 'languagetool.jar'), 'resources' ],
         'Service',
         [],
         { encoding: 'utf8' }
