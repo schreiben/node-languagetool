@@ -197,7 +197,6 @@
   );
 
   const send = exports.send = cmd => new Promise((resolve, reject) => start().then(() => {
-    console.log('sending data...');
     var entry = {
       cmd: cmd,
       resolve: resolve,

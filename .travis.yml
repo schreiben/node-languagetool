@@ -3,3 +3,6 @@ node_js: "5.5.0"
 os:
   - linux
   - osx
+install:
+  - ant compile
+  - npm install
