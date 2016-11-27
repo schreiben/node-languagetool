@@ -1,23 +1,15 @@
 {
   "name": "node-languagetool",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Node.js binding to the Language Tool spellchecker framework",
   "main": "index.js",
   "dependencies": {
-    "child_process": "^1.0.2",
     "fs": "0.0.1-security",
-    "mkdirp": "^0.5.1",
-    "node-grd": "^0.2.0",
+    "node-grd": "^0.3.0",
     "node-jre": "^0.1.0",
-    "os": "^0.1.1",
     "os-locale": "^1.4.0",
     "path": "^0.12.7",
-    "portfinder": "^1.0.9",
-    "process": "^0.11.9",
-    "progress": "^1.1.8",
-    "request": "^2.76.0",
-    "rmdir": "^1.2.0",
-    "yauzl": "^2.7.0"
+    "process": "^0.11.9"
   },
   "devDependencies": {},
   "scripts": {
