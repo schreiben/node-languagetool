@@ -5,7 +5,7 @@
   "main": "index.js",
   "dependencies": {
     "fs": "0.0.1-security",
-    "node-grd": "^0.3.0",
+    "node-grd": "git+https://git@github.com/schreiben/node-grd.git",
     "node-jre": "^0.1.0",
     "os-locale": "^1.4.0",
     "path": "^0.12.7",
