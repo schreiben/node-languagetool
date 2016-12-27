@@ -27,9 +27,10 @@
 
   const fs = require('fs');
   const path = require('path');
+  const process = require('process');
   const osLocale = require('os-locale');
   const jre = require('node-jre');
-  const grd = require('node-grd');
+  const grd = require('node-grd')
 
   const smoketest = exports.smoketest = () => new Promise((resolve, reject) =>
     check('This is wong.', 'en-US').then(
@@ -54,7 +55,8 @@
       'node-languagetool-service',
       __dirname,
       'lt',
-      err => err ? reject(err) : resolve()
+      err => err ? reject(err) : resolve(),
+      process.env.GITHUB_OAUTH_TOKEN
     )
   );
 
