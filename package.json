@@ -7,7 +7,6 @@
     "fs": "0.0.1-security",
     "node-grd": "^0.4.0",
     "node-jre": "^0.1.0",
-    "os-locale": "^1.4.0",
     "path": "^0.12.7",
     "process": "^0.11.9"
   },

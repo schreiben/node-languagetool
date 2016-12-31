@@ -28,7 +28,6 @@
   const fs = require('fs');
   const path = require('path');
   const process = require('process');
-  const osLocale = require('os-locale');
   const jre = require('node-jre');
   const grd = require('node-grd')
 
