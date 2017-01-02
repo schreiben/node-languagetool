@@ -84,12 +84,15 @@
       );
       service.on('error', err => reject(err));
       service.stdout.on('data', line => {
-        line = JSON.parse(line);
-        var entry = queue.pop();
-        if (line.code === 200 && entry.resolve)
-          entry.resolve(line);
-        else if (line.code != 200 && entry.reject)
-          entry.reject(line);
+        line = line.toString().trim();
+        if (line.length > 0) {
+          line = JSON.parse(line);
+          var entry = queue.pop();
+          if (line.code === 200 && entry.resolve)
+            entry.resolve(line);
+          else if (line.code != 200 && entry.reject)
+            entry.reject(line);
+        }
       });
       if(queue.length > 0)
         writeTopCommand();
