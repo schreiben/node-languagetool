@@ -4,6 +4,7 @@
   "description": "Node.js binding to the Language Tool spellchecker framework",
   "main": "index.js",
   "dependencies": {
+    "JSONStream": "^1.3.1",
     "fs": "0.0.1-security",
     "node-grd": "^0.4.0",
     "node-jre": "^0.2.1",

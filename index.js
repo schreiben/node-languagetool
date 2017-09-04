@@ -29,7 +29,8 @@
   const path = require('path');
   const process = require('process');
   const jre = require('node-jre');
-  const grd = require('node-grd')
+  const grd = require('node-grd');
+  const JSONStream = require('JSONStream')
 
   const smoketest = exports.smoketest = () => new Promise((resolve, reject) =>
     check('This is wong.', 'en-US').then(
@@ -83,10 +84,9 @@
         { encoding: 'utf8' }
       );
       service.on('error', err => reject(err));
-      service.stdout.on('data', line => {
-        line = line.toString().trim();
-        if (line.length > 0) {
-          line = JSON.parse(line);
+      service.stdout
+        .pipe(JSONStream.parse())
+        .on('data', line => {
           var entry = queue.pop();
           if (line.code === 200 && entry.resolve)
             entry.resolve(line);
@@ -94,10 +94,7 @@
             entry.reject(line);
           if (queue.length > 0)
             writeTopCommand();
-        }
-      });
-      if (queue.length > 0)
-        writeTopCommand();
+        });
       resolve();
     }
   });
