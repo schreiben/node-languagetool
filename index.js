@@ -92,9 +92,11 @@
             entry.resolve(line);
           else if (line.code != 200 && entry.reject)
             entry.reject(line);
+          if (queue.length > 0)
+            writeTopCommand();
         }
       });
-      if(queue.length > 0)
+      if (queue.length > 0)
         writeTopCommand();
       resolve();
     }
