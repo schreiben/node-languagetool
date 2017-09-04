@@ -6,7 +6,7 @@
   "dependencies": {
     "fs": "0.0.1-security",
     "node-grd": "^0.4.0",
-    "node-jre": "^0.1.0",
+    "node-jre": "^0.2.1",
     "path": "^0.12.7",
     "process": "^0.11.9"
   },
